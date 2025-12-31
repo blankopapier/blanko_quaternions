@@ -1,0 +1,20 @@
+[package]
+name = "blanko_quaternions"
+version = "0.1.0"
+edition = "2024"
+authors = ["blankopapier"]
+description = "My personal library for (dual) quaternions and complex/dual numbers."
+license = "MIT"
+
+[lib]
+name = "blanko_quaternions"
+path = "src/lib.rs"
+
+[[bin]]
+name = "tests"
+path = "src/tests.rs"
+
+[dependencies]
+bytemuck = { version = "*", features = ["derive"] }
+derive_more = { version = "*", features = ["full"] }
+auto_ops = { version = "*" }
