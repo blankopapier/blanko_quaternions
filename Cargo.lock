@@ -10,7 +10,7 @@ checksum = "7460f7dd8e100147b82a63afca1a20eb6c231ee36b90ba7272e14951cb58af59"
 
 [[package]]
 name = "blanko_quaternions"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "auto_ops",
  "bytemuck",
