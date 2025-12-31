@@ -15,6 +15,6 @@ name = "tests"
 path = "src/tests.rs"
 
 [dependencies]
-bytemuck = { version = "*", features = ["derive"] }
-derive_more = { version = "*", features = ["full"] }
-auto_ops = { version = "*" }
+bytemuck = { version = "1.24.0", features = ["derive"] }
+derive_more = { version = "2.1.1", features = ["full"] }
+auto_ops = { version = "0.3.0" }
