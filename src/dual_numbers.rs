@@ -1,4 +1,4 @@
-//! Dual numbers are like complex numbers, but instead of i*i = -1 we define E*E = 0.
+//! Dual numbers are like complex numbers, but instead of i^2 = -1 we define E^2 = 0.
 //! They can be used for some niche applications and mechanical stuff
 
 use crate::util::Scalar;
