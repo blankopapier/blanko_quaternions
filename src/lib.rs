@@ -9,7 +9,10 @@
 //! <div class="warning">
 //! This crate is still in development, but usable.
 //! Therefore it may still change quite a bit
-//! <\div>
+//! </div>
+//!
+//! # Cargo features
+//! * `angle_new_degrees` will make `Angle::new(angle)` use degrees as input
 
 
 
