@@ -13,6 +13,7 @@ path = "src/lib.rs"
 
 [features]
 angle_new_degrees = []
+use_f64 = []
 
 [[bin]]
 name = "tests"

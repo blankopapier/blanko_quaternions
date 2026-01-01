@@ -5,8 +5,13 @@
 //! `Angle::new(angle: f32)` will take in radians by default.
 //! You can change this to use degrees by default by enabling the `"angle_new_degrees"` feature
 
+use crate::util::Scalar;
 
+#[cfg(not(feature = "use_f64"))]
 use std::f32::consts::{PI, TAU};
+
+#[cfg(feature = "use_f64")]
+use std::f64::consts::{PI, TAU};
 
 /// Positive angles are counter-clockwise (ccw)
 
@@ -18,8 +23,8 @@ use std::f32::consts::{PI, TAU};
 )]
 pub struct Angle
 {
-    rad: f32,
-    deg: f32,
+    rad: Scalar,
+    deg: Scalar,
 }
 
 impl std::fmt::Display for Angle
@@ -29,18 +34,18 @@ impl std::fmt::Display for Angle
     }
 }
 
-auto_ops::impl_op_ex_commutative!(* |lhs: &Angle, rhs: &f32| -> Angle {
+auto_ops::impl_op_ex_commutative!(* |lhs: &Angle, rhs: &Scalar| -> Angle {
     Angle { rad: lhs.rad * rhs, deg: lhs.deg* rhs }
 });
-auto_ops::impl_op_ex!(*= |lhs: &mut Angle, rhs: &f32| {
+auto_ops::impl_op_ex!(*= |lhs: &mut Angle, rhs: &Scalar| {
     lhs.rad *= rhs;
     lhs.deg *= rhs;
 });
 
-auto_ops::impl_op_ex!(/ |lhs: &Angle, rhs: &f32| -> Angle {
+auto_ops::impl_op_ex!(/ |lhs: &Angle, rhs: &Scalar| -> Angle {
     Angle { rad: lhs.rad / rhs, deg: lhs.deg / rhs }
 });
-auto_ops::impl_op_ex!(/= |lhs: &mut Angle, rhs: &f32| {
+auto_ops::impl_op_ex!(/= |lhs: &mut Angle, rhs: &Scalar| {
     lhs.rad /= rhs;
     lhs.deg /= rhs;
 });
@@ -54,38 +59,38 @@ impl Angle
 
     /// Create Angle from degrees
     #[cfg(feature = "angle_new_degrees")]
-    pub fn new(angle: f32) -> Self
+    pub fn new(angle: Scalar) -> Self
     {
         Self::degrees(angle)
     }
 
     /// Create Angle from radians
     #[cfg(not(feature = "angle_new_degrees"))]
-    pub fn new(angle: f32) -> Self
+    pub fn new(angle: Scalar) -> Self
     {
         Self::radians(angle)
     }
 
     /// Create Angle from radians
-    pub fn radians(angle: f32) -> Self
+    pub fn radians(angle: Scalar) -> Self
     {
         Self { rad: angle, deg: angle*(180.0/PI) }
     }
 
     /// Create Angle from degrees
-    pub fn degrees(angle: f32) -> Self
+    pub fn degrees(angle: Scalar) -> Self
     {
         Self { deg: angle, rad: angle*(PI/180.0) }
     }
 
     /// Get this angle in radians
-    pub fn rad(&self) -> f32
+    pub fn rad(&self) -> Scalar
     {
         self.rad
     }
 
     /// Get this angle in degrees
-    pub fn deg(&self) -> f32
+    pub fn deg(&self) -> Scalar
     {
         self.deg
     }
@@ -116,7 +121,7 @@ impl Angle
         Self { rad: self.rad.abs(), deg: self.deg.abs() }
     }
 
-    pub fn signum(&self) -> f32
+    pub fn signum(&self) -> Scalar
     {
         self.deg.signum()
     }
@@ -182,9 +187,9 @@ impl Angle
         Self::degrees(self.deg % 360.0)
     }
 
-    pub fn sin(&self) -> f32 { self.rad.sin() }
-    pub fn cos(&self) -> f32 { self.rad.cos() }
-    pub fn tan(&self) -> f32 { self.rad.tan() }
+    pub fn sin(&self) -> Scalar { self.rad.sin() }
+    pub fn cos(&self) -> Scalar { self.rad.cos() }
+    pub fn tan(&self) -> Scalar { self.rad.tan() }
 
-    pub fn sin_cos(&self) -> (f32,f32) { self.rad.sin_cos() }
+    pub fn sin_cos(&self) -> (Scalar,Scalar) { self.rad.sin_cos() }
 }

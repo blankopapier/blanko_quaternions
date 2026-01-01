@@ -1,7 +1,9 @@
 // Quaternions
 
+
 pub use crate::angle::Angle;
-use crate::direction::Direction;
+use crate::vector3::Vector3;
+use crate::util::Scalar;
 
 #[repr(C)]
 #[derive(
@@ -11,46 +13,46 @@ use crate::direction::Direction;
 )]
 pub struct Quaternion
 {
-    pub w: f32,
-    pub i: f32,
-    pub j: f32,
-    pub k: f32,
+    pub w: Scalar,
+    pub i: Scalar,
+    pub j: Scalar,
+    pub k: Scalar,
 }
 
 impl std::fmt::Display for Quaternion
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if self.w.powi(2) > std::f32::EPSILON {
+        if self.w.powi(2) > Scalar::EPSILON {
             write!(f, "{}",  self.w);
 
-            if self.i.powi(2) > std::f32::EPSILON ||
-                self.j.powi(2) > std::f32::EPSILON ||
-                self.k.powi(2) > std::f32::EPSILON
+            if self.i.powi(2) > Scalar::EPSILON ||
+                self.j.powi(2) > Scalar::EPSILON ||
+                self.k.powi(2) > Scalar::EPSILON
             {
                 write!(f, " + ");
             }
         }
 
-        if self.i.powi(2) > std::f32::EPSILON {
+        if self.i.powi(2) > Scalar::EPSILON {
             write!(f, "{}i", self.i);
 
-            if self.j.powi(2) > std::f32::EPSILON ||
-                self.k.powi(2) > std::f32::EPSILON
+            if self.j.powi(2) > Scalar::EPSILON ||
+                self.k.powi(2) > Scalar::EPSILON
             {
                 write!(f, " + ");
             }
         }
 
-        if self.j.powi(2) > std::f32::EPSILON {
+        if self.j.powi(2) > Scalar::EPSILON {
             write!(f, "{}j", self.j);
 
-            if self.k.powi(2) > std::f32::EPSILON
+            if self.k.powi(2) > Scalar::EPSILON
             {
                 write!(f, " + ");
             }
         }
 
-        if self.k.powi(2) > std::f32::EPSILON {
+        if self.k.powi(2) > Scalar::EPSILON {
             write!(f, "{}k", self.k);
         }
 
@@ -61,16 +63,16 @@ impl std::fmt::Display for Quaternion
 impl Quaternion
 {
     pub fn conj(&self) -> Self { Self { w: self.w, i: -self.i, j: -self.j, k: -self.k } }
-    pub fn norm(&self) -> f32 { (self.w*self.w + self.i*self.i + self.j*self.j + self.k*self.k).sqrt() }
+    pub fn norm(&self) -> Scalar { (self.w*self.w + self.i*self.i + self.j*self.j + self.k*self.k).sqrt() }
     pub fn normalized(&self) -> Self { *self * (1.0 / self.norm()) }
 
     /// Create a Quaternion representing a point in space, i.e. xi + yj + zk.
-    pub fn point(pos: &[f32]) -> Self
+    pub fn point(pos: &[Scalar]) -> Self
     {
         Quaternion { w: 0.0, i: pos[0], j: pos[1], k: pos[2] }
     }
 
-    pub fn rotor(angle: Angle, x: f32, y: f32, z: f32) -> Self
+    pub fn rotor(angle: Angle, x: Scalar, y: Scalar, z: Scalar) -> Self
     {
         let mut q = Self { w: 0.0, i: x, j: y, k: z }.normalized();
         let (sin,cos) = (angle*0.5).sin_cos();
@@ -81,23 +83,23 @@ impl Quaternion
         q
     }
 
-    pub fn transform_point(&self, point: &[f32]) -> [f32;3]
+    pub fn transform_point(&self, point: &[Scalar]) -> [Scalar;3]
     {
         self.transform_direction(point).into()
     }
 
-    pub fn transform_direction(&self, direction: &[f32]) -> [f32;3]
+    pub fn transform_direction(&self, direction: &[Scalar]) -> [Scalar;3]
     {
         // Taken from
         // https://rigidgeometricalgebra.org/wiki/index.php?title=Motor
 
-        let direction = Direction {
+        let direction = Vector3 {
             x: direction[0],
             y: direction[1],
             z: direction[2]
         };
 
-        let v = Direction { x: self.i,  y: self.j,  z: self.k  };
+        let v = Vector3 { x: self.i,  y: self.j,  z: self.k  };
         let vw = self.w;
 
         let a = v.cross(&direction);
@@ -117,7 +119,7 @@ auto_ops::impl_op_ex!(* |lhs: &Quaternion, rhs: &Quaternion| -> Quaternion {
         k: lhs.w * rhs.k + lhs.i * rhs.j - lhs.j * rhs.i + lhs.k * rhs.w
     }
 });
-auto_ops::impl_op_ex_commutative!(* |lhs: &Quaternion, rhs: &f32| -> Quaternion {
+auto_ops::impl_op_ex_commutative!(* |lhs: &Quaternion, rhs: &Scalar| -> Quaternion {
     Quaternion
     {
         w: lhs.w * rhs,
@@ -126,7 +128,7 @@ auto_ops::impl_op_ex_commutative!(* |lhs: &Quaternion, rhs: &f32| -> Quaternion 
         k: lhs.k * rhs
     }
 });
-auto_ops::impl_op_ex!(*= |lhs: &mut Quaternion, rhs: &f32| {
+auto_ops::impl_op_ex!(*= |lhs: &mut Quaternion, rhs: &Scalar| {
     lhs.w = lhs.w * rhs;
     lhs.i = lhs.i * rhs;
     lhs.j = lhs.j * rhs;
@@ -134,7 +136,7 @@ auto_ops::impl_op_ex!(*= |lhs: &mut Quaternion, rhs: &f32| {
 });
 
 auto_ops::impl_op_ex!(/ |lhs: &Quaternion, rhs: &Quaternion| -> Quaternion { lhs * rhs.conj() * (1.0 / rhs.norm().powi(2) ) });
-auto_ops::impl_op_ex!(/ |lhs: &Quaternion, rhs: &f32| -> Quaternion {
+auto_ops::impl_op_ex!(/ |lhs: &Quaternion, rhs: &Scalar| -> Quaternion {
     Quaternion
     {
         w: lhs.w / rhs,
@@ -143,8 +145,8 @@ auto_ops::impl_op_ex!(/ |lhs: &Quaternion, rhs: &f32| -> Quaternion {
         k: lhs.k / rhs
     }
 });
-auto_ops::impl_op_ex!(/ |lhs: &f32, rhs: &Quaternion| -> Quaternion { lhs * rhs.conj() * (1.0 / rhs.norm().powi(2) ) });
-auto_ops::impl_op_ex!(/= |lhs: &mut Quaternion, rhs: &f32| {
+auto_ops::impl_op_ex!(/ |lhs: &Scalar, rhs: &Quaternion| -> Quaternion { lhs * rhs.conj() * (1.0 / rhs.norm().powi(2) ) });
+auto_ops::impl_op_ex!(/= |lhs: &mut Quaternion, rhs: &Scalar| {
     lhs.w /= rhs;
     lhs.i /= rhs;
     lhs.j /= rhs;

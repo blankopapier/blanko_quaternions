@@ -1,4 +1,7 @@
+//! Dual numbers are like complex numbers, but instead of i*i = -1 we define E*E = 0.
+//! They can be used for some niche applications and mechanical stuff
 
+use crate::util::Scalar;
 
 #[repr(C)]
 #[derive(
@@ -8,33 +11,33 @@
 )]
 pub struct DualNumber
 {
-    pub re: f32,
-    pub du: f32,
+    pub re: Scalar,
+    pub du: Scalar,
 }
 
-impl From<f32> for DualNumber
+impl From<Scalar> for DualNumber
 {
-    fn from(value: f32) -> Self { DualNumber { re: value, du: 0.0 } }
+    fn from(value: Scalar) -> Self { DualNumber { re: value, du: 0.0 } }
 }
 
-impl From<&f32> for DualNumber
+impl From<&Scalar> for DualNumber
 {
-    fn from(value: &f32) -> Self { DualNumber { re: *value, du: 0.0 } }
+    fn from(value: &Scalar) -> Self { DualNumber { re: *value, du: 0.0 } }
 }
 
 impl std::fmt::Display for DualNumber
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if self.re.powi(2) > std::f32::EPSILON {
+        if self.re.powi(2) > Scalar::EPSILON {
             write!(f, "{}",  self.re);
 
-            if self.du.powi(2) > std::f32::EPSILON
+            if self.du.powi(2) > Scalar::EPSILON
             {
                 write!(f, " + ");
             }
         }
 
-        if self.du.powi(2) > std::f32::EPSILON {
+        if self.du.powi(2) > Scalar::EPSILON {
             write!(f, "{}i", self.du);
         }
 
@@ -44,18 +47,19 @@ impl std::fmt::Display for DualNumber
 
 impl DualNumber
 {
+    /// Conjugate, i.e. negate the dual part
     pub fn conj(&self) -> Self { Self { re: self.re, du: -self.du } }
 
     /// This is the "natural" norm defined via conjugation (a*a.conj).
     /// If this returns 0.0, you can not know whether or not the DualNumber is actually zero (dual part may be non-zero)
-    pub fn seminorm(&self) -> f32 { (self.re*self.re).sqrt() }
+    pub fn seminorm(&self) -> Scalar { (self.re*self.re).sqrt() }
 
     /// Normalizes this DualNumber by the seminorm
     pub fn seminormalized(&self) -> Self { *self * (1.0 / self.seminorm()) }
 
     /// This is an "artificial" norm equal to the Euclidean Norm.
     /// The DualNumber will be 0, if this norm returns 0.0
-    pub fn norm(&self) -> f32 { (self.re*self.re + self.du*self.du).sqrt() }
+    pub fn norm(&self) -> Scalar { (self.re*self.re + self.du*self.du).sqrt() }
 
     /// Normalizes this DualNumber by the Euclidean Norm
     pub fn normalized(&self) -> Self { *self * (1.0 / self.norm()) }
@@ -108,13 +112,49 @@ impl DualNumber
         }
     }
 
+    /// Dual number sine function
+    pub fn sin(&self) -> Self
+    {
+        // z = a + bE
+        // sin(z) = Σ (-1)^k * z^(2k+1) / (2k+1)!    k = 0,1,2,3...
+        //        = sin(a) + bE*cos(a)
+
+        DualNumber { re: self.re.sin(), du: self.re.cos() * self.du }
+    }
+
+    /// Dual number cosine function
+    pub fn cos(&self) -> Self
+    {
+        // For (real) analytic functions, you can extend them via Taylor series.
+        // let z = a + bE.
+        // Evaluate f(a).
+        //
+        // Taylor Series:
+        // f(a+bE) = Σ f^(k)(a) * (a+bE - a)^k / k!    k = 0,1,2,3...
+        //         = Σ f^(k)(a) * (bE)^k / k!          E^k = 0, when k >= 1
+        //         = f(a) + f'(a)bE
+
+        DualNumber { re: self.re.cos(), du: -self.re.sin() * self.du }
+    }
+
+    /// Dual number tangent function.
+    /// May produce invalid numbers when .re = (2k+1)*PI/2 (odd multiple of Pi/2)
+    pub fn tan(&self) -> Self
+    {
+        // f(a+bE) = f(a) + f'(a)bE
+        // tan' = 1 / cos^2
+        DualNumber { re: self.re.tan(), du: self.du / self.re.cos().powi(2) }
+    }
+
     /// Raise a DualNumber to some (real) power.
     /// This may return invalid numbers if .re <= 0.0
-    pub fn powf(&self, f: f32) -> Self
+    pub fn powf(&self, f: Scalar) -> Self
     {
         ( f * self.log() ).exp()
     }
 
+    /// Raise a DualNumber to some integer power.
+    /// This may return invalid numbers if .re <= 0.0
     pub fn powi(&self, i: i32) -> Self
     {
         // (a+bE)^n = ... (starting with n=0)
@@ -131,7 +171,7 @@ impl DualNumber
         let p = self.re.powi( (i-1).max(0) );
         let d = DualNumber {
             re: p*self.re,
-            du: (i as f32)*p*self.du
+            du: (i as Scalar)*p*self.du
         };
 
         if i < 0 { 1.0 / d } else { d }
@@ -150,54 +190,54 @@ auto_ops::impl_op_ex!(*= |lhs: &mut DualNumber, rhs: &DualNumber| {
     lhs.re = lhs.re * rhs.re;
     lhs.du = lhs.du * rhs.re + lhs.re * rhs.du;
 });
-auto_ops::impl_op_ex_commutative!(* |lhs: &DualNumber, rhs: &f32| -> DualNumber {
+auto_ops::impl_op_ex_commutative!(* |lhs: &DualNumber, rhs: &Scalar| -> DualNumber {
     DualNumber
     {
         re: lhs.re * rhs,
         du: lhs.du * rhs
     }
 });
-auto_ops::impl_op_ex!(*= |lhs: &mut DualNumber, rhs: &f32| {
+auto_ops::impl_op_ex!(*= |lhs: &mut DualNumber, rhs: &Scalar| {
     lhs.re *= rhs;
     lhs.du *= rhs;
 });
 
 auto_ops::impl_op_ex!(/ |lhs: &DualNumber, rhs: &DualNumber| -> DualNumber { lhs * rhs.conj() * (1.0 / rhs.seminorm().powi(2) ) });
 auto_ops::impl_op_ex!(/= |lhs: &mut DualNumber, rhs: &DualNumber| { *lhs *= rhs.conj() * (1.0 / rhs.seminorm().powi(2) ) });
-auto_ops::impl_op_ex!(/ |lhs: &DualNumber, rhs: &f32| -> DualNumber {
+auto_ops::impl_op_ex!(/ |lhs: &DualNumber, rhs: &Scalar| -> DualNumber {
     DualNumber
     {
         re: lhs.re / rhs,
         du: lhs.du / rhs
     }
 });
-auto_ops::impl_op_ex!(/ |lhs: &f32, rhs: &DualNumber| -> DualNumber { lhs * rhs.conj() * (1.0 / rhs.seminorm().powi(2) ) });
-auto_ops::impl_op_ex!(/= |lhs: &mut DualNumber, rhs: &f32| {
+auto_ops::impl_op_ex!(/ |lhs: &Scalar, rhs: &DualNumber| -> DualNumber { lhs * rhs.conj() * (1.0 / rhs.seminorm().powi(2) ) });
+auto_ops::impl_op_ex!(/= |lhs: &mut DualNumber, rhs: &Scalar| {
     lhs.re /= rhs;
     lhs.du /= rhs;
 });
 
-auto_ops::impl_op_ex_commutative!(+ |lhs: &DualNumber, rhs: &f32| -> DualNumber {
+auto_ops::impl_op_ex_commutative!(+ |lhs: &DualNumber, rhs: &Scalar| -> DualNumber {
     DualNumber
     {
         re: lhs.re + rhs,
         du: lhs.du
     }
 });
-auto_ops::impl_op_ex!(+= |lhs: &mut DualNumber, rhs: &f32| { lhs.re += rhs });
+auto_ops::impl_op_ex!(+= |lhs: &mut DualNumber, rhs: &Scalar| { lhs.re += rhs });
 
-auto_ops::impl_op_ex!(- |lhs: &DualNumber, rhs: &f32| -> DualNumber {
+auto_ops::impl_op_ex!(- |lhs: &DualNumber, rhs: &Scalar| -> DualNumber {
     DualNumber
     {
         re: lhs.re - rhs,
         du: lhs.du
     }
 });
-auto_ops::impl_op_ex!(- |lhs: &f32, rhs: &DualNumber| -> DualNumber {
+auto_ops::impl_op_ex!(- |lhs: &Scalar, rhs: &DualNumber| -> DualNumber {
     DualNumber
     {
         re: lhs - rhs.re,
         du: -rhs.du
     }
 });
-auto_ops::impl_op_ex!(-= |lhs: &mut DualNumber, rhs: &f32| { lhs.re -= rhs });
+auto_ops::impl_op_ex!(-= |lhs: &mut DualNumber, rhs: &Scalar| { lhs.re -= rhs });

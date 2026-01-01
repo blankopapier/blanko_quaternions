@@ -12,7 +12,8 @@
 //! </div>
 //!
 //! # Cargo features
-//! * `angle_new_degrees` will make `Angle::new(angle)` use degrees as input
+//! * `angle_new_degrees` will make `Angle::new(angle)` use degrees as input (disabled by default)
+//! * `use_f64` will use f64 as scalar type for components instead of f32 (disabled by default)
 
 
 
@@ -25,4 +26,4 @@ pub mod quaternion;
 pub mod dual_quaternion;
 
 mod util;
-mod direction;
+mod vector3;
