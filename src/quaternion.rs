@@ -1,8 +1,7 @@
 // Quaternions
 
 pub use crate::angle::Angle;
-pub use crate::point::Point;
-pub use crate::direction::Direction;
+use crate::direction::Direction;
 
 #[repr(C)]
 #[derive(
@@ -65,7 +64,13 @@ impl Quaternion
     pub fn norm(&self) -> f32 { (self.w*self.w + self.i*self.i + self.j*self.j + self.k*self.k).sqrt() }
     pub fn normalized(&self) -> Self { *self * (1.0 / self.norm()) }
 
-    pub fn from_angle_axis(angle: Angle, x: f32, y: f32, z: f32) -> Self
+    /// Create a Quaternion representing a point in space, i.e. xi + yj + zk.
+    pub fn point(pos: &[f32]) -> Self
+    {
+        Quaternion { w: 0.0, i: pos[0], j: pos[1], k: pos[2] }
+    }
+
+    pub fn rotor(angle: Angle, x: f32, y: f32, z: f32) -> Self
     {
         let mut q = Self { w: 0.0, i: x, j: y, k: z }.normalized();
         let (sin,cos) = (angle*0.5).sin_cos();
@@ -76,22 +81,28 @@ impl Quaternion
         q
     }
 
-    pub fn transform_point(&self, point: &Point) -> Point
+    pub fn transform_point(&self, point: &[f32]) -> [f32;3]
     {
-        self.transform_direction(&point.into()).into()
+        self.transform_direction(point).into()
     }
 
-    pub fn transform_direction(&self, direction: &Direction) -> Direction
+    pub fn transform_direction(&self, direction: &[f32]) -> [f32;3]
     {
         // Taken from
         // https://rigidgeometricalgebra.org/wiki/index.php?title=Motor
+
+        let direction = Direction {
+            x: direction[0],
+            y: direction[1],
+            z: direction[2]
+        };
 
         let v = Direction { x: self.i,  y: self.j,  z: self.k  };
         let vw = self.w;
 
         let a = v.cross(&direction);
 
-        *direction + 2.0 * (vw*a + v.cross(&a))
+        (direction + 2.0 * (vw*a + v.cross(&a))).into()
     }
 
     // TODO: Pow, Log, Exp

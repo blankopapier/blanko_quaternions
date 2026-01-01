@@ -41,9 +41,9 @@ auto_ops::impl_op_ex_commutative!(* |lhs: &Direction, rhs: &f32| -> Direction {
     }
 });
 
-#[macro_export]
-macro_rules! direction {
-    ($x: expr, $y: expr, $z: expr) => {
-        Direction { x: ($x) as f32, y: ($y) as f32, z: ($z) as f32 }
-    };
+impl From<Direction> for [f32;3]
+{
+    fn from(value: Direction) -> Self {
+        [value.x, value.y, value.z]
+    }
 }

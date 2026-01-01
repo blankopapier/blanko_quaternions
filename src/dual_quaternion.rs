@@ -1,6 +1,5 @@
 use crate::quaternion::Quaternion;
 pub use crate::angle::Angle;
-pub use crate::point::Point;
 pub use crate::direction::Direction;
 
 #[repr(C)]
@@ -55,7 +54,8 @@ impl std::fmt::Display for DualQuaternion
 
 impl DualQuaternion
 {
-    /// Negate everything except scalar and dual-scalar (clifford conjugation)
+    /// Negate everything except scalar and dual-scalar (clifford conjugation).
+    /// Use this when transforming lines in sandwich products
     pub fn conj(&self) -> Self
     {
         Self {
@@ -70,9 +70,9 @@ impl DualQuaternion
         }
     }
 
-    /// "Sandwich"-Conjugate, use this with sandwich-product.
-    /// Just like DualQuaternion::conj(), but negate the dual part afterward
-    pub fn sconj(&self) -> Self
+    /// Same as .conj(), but negates the dual part afterward.
+    /// Use this when transforming points in sandwich products
+    pub fn nconj(&self) -> Self
     {
         Self {
             w:   self.w,
@@ -86,7 +86,23 @@ impl DualQuaternion
         }
     }
 
-    /// The norm of the real-part-Quaternion
+    /// Negate the dual part.
+    pub fn iconj(&self) -> Self
+    {
+        Self {
+            w:   self.w,
+            i:  -self.i,
+            j:  -self.j,
+            k:  -self.k,
+            ie:  self.ie,
+            je:  self.je,
+            ke:  self.ke,
+            we: -self.we,
+        }
+    }
+
+    /// The norm of the real-part-Quaternion.
+    /// For lines, this will the length of the directional vector.
     pub fn norm(&self) -> f32
     {
         (self.w * self.w +
@@ -95,7 +111,8 @@ impl DualQuaternion
         self.k * self.k).sqrt()
     }
 
-    /// The norm of the dual-part-Quaternion
+    /// The norm of the dual-part-Quaternion.
+    /// For normalized lines, this will the distance from the origin.
     pub fn inorm(&self) -> f32
     {
         (self.we * self.we +
@@ -104,39 +121,70 @@ impl DualQuaternion
         self.ke * self.ke).sqrt()
     }
 
-    /// Normalize this DualQuaternion by its real-part-Quaternion, i.e. keep rotation normalized
+    /// Normalize this DualQuaternion by its real-part-Quaternion, i.e. keep rotation normalized.
+    /// For lines, this means normalizing the direction vector and dividing it's moment by the length
+    /// of the original directin vector.
     pub fn normalized(&self) -> Self
     {
         *self * (1.0 / self.norm())
     }
 
-    /// Screw around a line through `pos` with direction `dir`.
+    /// Create a DualQuaternion representing a point in space, i.e. 1+(xi + yj + zk)E.
+    pub fn point(pos: &[f32]) -> Self
+    {
+        DualQuaternion { w: 1.0, i: 0.0, j: 0.0, k: 0.0, ie: pos[0], je: pos[1], ke: pos[2], we: 0.0 }
+    }
+
+    /// Create a DualQuaternion representing a line in space (= Plücker coordinates)
+    ///
+    /// Lines can be represented by two points, a point (p) and a direction (r) or by a direction and a moment (m).
+    /// The moment (m) can be calculated with the cross product between a point-vector and a direction-vector, i.e.
+    /// m = p X r
+    ///
+    /// Let r be the vector (i,j,k) of this DualQuaternion.
+    /// Let m be the vector (ie,je,ke) of this DualQuaternion.
+    ///
+    /// Then this line's nearest point to the origin is P = r X m (cross product of r and m).
+    /// Also, r will be normalized.
+    pub fn line(pos: &[f32], dir: &[f32]) -> Self
+    {
+        let n = 1.0 / (dir[0]*dir[0] + dir[1]*dir[1] + dir[2]*dir[2]).sqrt();
+        let dir = [
+            dir[0] * n,
+            dir[1] * n,
+            dir[2] * n,
+        ];
+
+        // normalized cross product between pos and dir
+        let moment = [
+            n * (pos[1] * dir[2] - dir[1] * pos[2]),
+            n * (pos[2] * dir[0] - dir[2] * pos[0]),
+            n * (pos[0] * dir[1] - dir[0] * pos[1]),
+        ];
+
+        DualQuaternion { w: 0.0, i: dir[0], j: dir[1], k: dir[2], ie: moment[0], je: moment[1], ke: moment[2], we: 0.0 }
+    }
+
+    /// Create a screw around a line.
     /// The screw will rotate `angle` and travel `distance` units along the line.
-    pub fn from_line(pos: &Point, dir: &Direction, angle: Angle, distance: f32) -> Self
+    pub fn screw(line: &DualQuaternion, angle: Angle, distance: f32) -> Self
     {
         // So basically, we use Geometric Algebra for this and just call it DualQuaternion afterward.
         // The key idea is to convert position and direction to moment and direction, aka Plücker Coordinates for a line.
         // We then 'normalize' this line and create a rotor and translator from it.
         // Then compose the two DualQuaternions and return it.
 
-        let normalizer = 1.0 / dir.norm();
         let (sin,cos) = (angle*0.5).sin_cos();
         let t = distance * 0.5;
 
-        let pos: Direction = pos.into();
-        let moment = pos.cross(dir);
-
-        let dir = dir * normalizer;
-        let moment = moment * normalizer;
-
         let rotor = DualQuaternion {
             w:  cos,
-            i:  sin * dir.x,
-            j:  sin * dir.y,
-            k:  sin * dir.z,
-            ie: sin * moment.x,
-            je: sin * moment.y,
-            ke: sin * moment.z,
+            i:  sin * line.i,
+            j:  sin * line.j,
+            k:  sin * line.k,
+            ie: sin * line.ie,
+            je: sin * line.je,
+            ke: sin * line.ke,
             we: 0.0
         };
 
@@ -145,9 +193,9 @@ impl DualQuaternion
             i:  0.0,
             j:  0.0,
             k:  0.0,
-            ie: t * dir.x,
-            je: t * dir.y,
-            ke: t * dir.z,
+            ie: t * line.i,
+            je: t * line.j,
+            ke: t * line.k,
             we: 0.0
         };
 
@@ -155,8 +203,14 @@ impl DualQuaternion
     }
 
     /// Basically a Quaternion
-    pub fn from_angle_axis(angle: Angle, axis: &Direction) -> Self
+    pub fn rotor(angle: Angle, axis: &[f32]) -> Self
     {
+        let axis = Direction {
+            x: axis[0],
+            y: axis[1],
+            z: axis[2]
+        };
+
         let (sin,cos) = (angle*0.5).sin_cos();
         let dir = axis.normalize();
 
@@ -173,22 +227,30 @@ impl DualQuaternion
     }
 
     /// Translational DualQuaternion.
-    pub fn from_translation(translation: &Direction) -> Self
+    pub fn translator(translation: &[f32]) -> Self
     {
         DualQuaternion {
             w:  1.0,
             i:  0.0,
             j:  0.0,
             k:  0.0,
-            ie: 0.5 * translation.x,
-            je: 0.5 * translation.y,
-            ke: 0.5 * translation.z,
+            ie: 0.5 * translation[0],
+            je: 0.5 * translation[1],
+            ke: 0.5 * translation[2],
             we: 0.0
         }
     }
 
-    pub fn transform_point(&self, point: &Point) -> Point
+    /// Transform a 3D-vector as point.
+    /// This means that the vector will be screwed around a line.
+    pub fn transform_point(&self, point: &[f32]) -> [f32; 3]
     {
+        let point = Direction {
+            x: point[0],
+            y: point[1],
+            z: point[2]
+        };
+
         // Taken from
         // https://rigidgeometricalgebra.org/wiki/index.php?title=Motor
 
@@ -203,8 +265,17 @@ impl DualQuaternion
         (p + 2.0 * (vw*a + v.cross(&a) - mw*v)).into()
     }
 
-    pub fn transform_direction(&self, direction: &Direction) -> Direction
+    /// Transform a 3D-vector as direction.
+    /// This means that the vector will be rotated around the origin, not
+    /// around a line. Neither will it be translated along a line.
+    pub fn transform_direction(&self, direction: &[f32]) -> [f32; 3]
     {
+        let direction = Direction {
+            x: direction[0],
+            y: direction[1],
+            z: direction[2]
+        };
+
         // Taken from
         // https://rigidgeometricalgebra.org/wiki/index.php?title=Motor
 
@@ -213,7 +284,40 @@ impl DualQuaternion
 
         let a = v.cross(&direction);
 
-        *direction + 2.0 * (vw*a + v.cross(&a))
+        (direction + 2.0 * (vw*a + v.cross(&a))).into()
+    }
+
+    /// Transform a line by this DualQuaternion, i.e. screw some line around another line
+    pub fn transform_line(&self, line: &DualQuaternion) -> DualQuaternion
+    {
+        // Taken from
+        // https://rigidgeometricalgebra.org/wiki/index.php?title=Motor
+        //
+        // This is the same as transforming direction and position of the line
+        // individually and converting it to a DualQuaternion again.
+
+        let lv = Direction { x: line.i, y: line.j, z: line.k };
+        let lm = Direction { x: line.ie, y: line.je, z: line.ke };
+
+        let v = Direction { x: self.i,  y: self.j,  z: self.k  };
+        let m = Direction { x: self.ie, y: self.je, z: self.ke };
+        let vw = self.w;
+        let mw = self.we;
+
+        let a = v.cross(&lv);
+        let b = v.cross(&lm);
+        let c = m.cross(&lv);
+        let d = b + c; // Not
+
+        let lv = lv + 2.0 * (vw*a + v.cross(&a));
+        let lm = lm + 2.0 * (mw*a + vw*d + v.cross(&d) + m.cross(&a));
+
+        DualQuaternion {
+            w: 0.0,
+            i: lv.x, j: lv.y, k: lv.z,
+            ie: lm.x, je: lm.y, ke: lm.z,
+            we: 0.0
+        }
     }
 
     // TODO: Pow, Log, Exp
@@ -237,32 +341,7 @@ auto_ops::impl_op_ex!(* |lhs: &DualQuaternion, rhs: &DualQuaternion| -> DualQuat
 
     DualQuaternion { w, i, j, k, ie, je, ke, we }
 });
-auto_ops::impl_op_ex!(* |lhs: &DualQuaternion, rhs: &Quaternion| -> DualQuaternion {
-    let (lhs_real, lhs_dual) = (
-        Quaternion { w: lhs.w, i: lhs.i, j: lhs.j, k: lhs.k },
-        Quaternion { w: lhs.we, i: lhs.ie, j: lhs.je, k: lhs.ke }
-    );
 
-    let (Quaternion { w, i, j, k }, Quaternion { w: we, i: ie, j: je, k: ke }) = (
-        lhs_real * rhs,
-        lhs_dual * rhs
-    );
-
-    DualQuaternion { w, i, j, k, ie, je, ke, we }
-});
-auto_ops::impl_op_ex!(* |lhs: &Quaternion, rhs: &DualQuaternion| -> DualQuaternion {
-    let (rhs_real, rhs_dual) = (
-        Quaternion { w: rhs.w, i: rhs.i, j: rhs.j, k: rhs.k },
-        Quaternion { w: rhs.we, i: rhs.ie, j: rhs.je, k: rhs.ke }
-    );
-
-    let (Quaternion { w, i, j, k }, Quaternion { w: we, i: ie, j: je, k: ke }) = (
-        lhs * rhs_real,
-        lhs * rhs_dual
-    );
-
-    DualQuaternion { w, i, j, k, ie, je, ke, we }
-});
 auto_ops::impl_op_ex_commutative!(* |lhs: &DualQuaternion, rhs: &f32| -> DualQuaternion {
     DualQuaternion {
         w:  rhs * lhs.w,
@@ -275,6 +354,7 @@ auto_ops::impl_op_ex_commutative!(* |lhs: &DualQuaternion, rhs: &f32| -> DualQua
         we: rhs * lhs.we
     }
 });
+
 auto_ops::impl_op_ex!(*= |lhs: &mut DualQuaternion, rhs: &f32| {
     lhs.w  = lhs.w  * rhs;
     lhs.i  = lhs.i  * rhs;

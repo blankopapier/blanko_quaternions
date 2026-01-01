@@ -44,22 +44,39 @@ impl Angle
     pub const QUARTER: Angle = Angle { rad: PI/2.0, deg:  90.0 };
     pub const ZERO   : Angle = Angle { rad: 0.0,    deg:   0.0 };
 
+    /// Create Angle from radians
+    #[cfg(feature = "angle_new_degrees")]
+    pub fn new(angle: f32) -> Self
+    {
+        Self::degrees(angle)
+    }
 
-    pub fn from_rad(angle: f32) -> Self
+    /// Create Angle from radians
+    #[cfg(not(feature = "angle_new_degrees"))]
+    pub fn new(angle: f32) -> Self
+    {
+        Self::radians(angle)
+    }
+
+    /// Create Angle from radians
+    pub fn radians(angle: f32) -> Self
     {
         Self { rad: angle, deg: angle*(180.0/PI) }
     }
 
-    pub fn from_deg(angle: f32) -> Self
+    /// Create Angle from degrees
+    pub fn degrees(angle: f32) -> Self
     {
         Self { deg: angle, rad: angle*(PI/180.0) }
     }
 
+    /// Get this angle in radians
     pub fn rad(&self) -> f32
     {
         self.rad
     }
 
+    /// Get this angle in degrees
     pub fn deg(&self) -> f32
     {
         self.deg
@@ -130,7 +147,7 @@ impl Angle
     {
         let modulo = self.deg % 360.0;
         let angle  = if self.deg < 0.0 { 360.0 + modulo } else { modulo };
-        Self::from_deg(angle)
+        Self::radians(angle)
     }
 
     /// Will convert this Angle to its positive value without clamping to [0°,360°).
@@ -147,19 +164,19 @@ impl Angle
             self.deg
         };
 
-        Self::from_deg(angle)
+        Self::degrees(angle)
     }
 
     /// Will return the correct angle in (-360°,360°).
     /// If this Angle would be -20°, then this method will return 340°
     pub fn range_corrected(&self) -> Self
     {
-        Self::from_deg(self.deg % 360.0)
+        Self::degrees(self.deg % 360.0)
     }
 
     pub fn sin(&self) -> f32 { self.rad.sin() }
     pub fn cos(&self) -> f32 { self.rad.cos() }
-    pub fn sin_cos(&self) -> (f32,f32) { self.rad.sin_cos() }
-
     pub fn tan(&self) -> f32 { self.rad.tan() }
+
+    pub fn sin_cos(&self) -> (f32,f32) { self.rad.sin_cos() }
 }
