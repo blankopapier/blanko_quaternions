@@ -52,9 +52,19 @@ auto_ops::impl_op_ex!(/= |lhs: &mut Angle, rhs: &Scalar| {
 
 impl Angle
 {
+    /// 360°
     pub const FULL   : Angle = Angle { rad: TAU,    deg: 360.0 };
+
+    /// 180°
     pub const HALF   : Angle = Angle { rad: PI,     deg: 180.0 };
+
+    /// 90°
     pub const QUARTER: Angle = Angle { rad: PI/2.0, deg:  90.0 };
+
+    /// 45°
+    pub const EIGTH:   Angle = Angle { rad: PI/4.0, deg:  45.0 };
+
+    /// 0°
     pub const ZERO   : Angle = Angle { rad: 0.0,    deg:   0.0 };
 
     /// Create Angle from degrees
