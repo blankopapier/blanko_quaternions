@@ -1,3 +1,11 @@
+//! Some people prefer giving angles in radians while others prefer degrees.
+//! This type solves this problem by containing both radians and degrees, while
+//! letting the user decide which preference they have.
+//!
+//! `Angle::new(angle: f32)` will take in radians by default.
+//! You can change this to use degrees by default by enabling the `"angle_new_degrees"` feature
+
+
 use std::f32::consts::{PI, TAU};
 
 /// Positive angles are counter-clockwise (ccw)
@@ -44,7 +52,7 @@ impl Angle
     pub const QUARTER: Angle = Angle { rad: PI/2.0, deg:  90.0 };
     pub const ZERO   : Angle = Angle { rad: 0.0,    deg:   0.0 };
 
-    /// Create Angle from radians
+    /// Create Angle from degrees
     #[cfg(feature = "angle_new_degrees")]
     pub fn new(angle: f32) -> Self
     {
