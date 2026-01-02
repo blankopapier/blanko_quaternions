@@ -165,7 +165,50 @@ impl Quaternion
 
     }
 
-    // TODO: Pow, Log, Exp
+    /// Exponential of a quaternion
+    pub fn exp(&self) -> Quaternion
+    {
+        // https://en.wikipedia.org/wiki/Quaternion#Functions_of_a_quaternion_variable
+
+        let Quaternion { w, i, j, k } = *self;
+
+        let exp_w = w.exp();
+        let axis_norm = (i*i + j*j + k*k).sqrt();
+
+        let (sin,cos) = axis_norm.sin_cos();
+        let (sin,cos) = (exp_w * sin / axis_norm, exp_w * cos);
+
+        Quaternion {
+            w: cos,
+            i: sin * i,
+            j: sin * j,
+            k: sin * k,
+        }
+
+    }
+
+    /// Logarithm of a quaternion
+    pub fn log(&self) -> Quaternion
+    {
+        // https://en.wikipedia.org/wiki/Quaternion#Functions_of_a_quaternion_variable
+
+        let Quaternion { w, i, j, k } = *self;
+
+        let axis_norm = (i*i + j*j + k*k).sqrt();
+        let quat_norm = i*i + j*j + k*k + w*w;
+
+        let log  = quat_norm.ln();
+        let acos = (w / quat_norm).acos() / axis_norm;
+
+        Quaternion {
+            w: log,
+            i: acos * i,
+            j: acos * j,
+            k: acos * k,
+        }
+
+    }
+
 }
 
 auto_ops::impl_op_ex!(* |lhs: &Quaternion, rhs: &Quaternion| -> Quaternion {
