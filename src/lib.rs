@@ -16,7 +16,6 @@
 //! * `use_f64` will use f64 as scalar type for components instead of f32 (disabled by default)
 
 
-
 pub mod angle;
 
 pub mod complex;

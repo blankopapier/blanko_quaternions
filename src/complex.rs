@@ -1,4 +1,5 @@
 use crate::util::Scalar;
+pub use crate::angle::Angle;
 
 #[repr(C)]
 #[derive(
@@ -44,6 +45,23 @@ impl std::fmt::Display for Complex
 
 impl Complex
 {
+    pub fn new(re: Scalar, im: Scalar) -> Self { Self { re, im } }
+
+    /// Create new complex number from polar coordinates.
+    pub fn polar(r: Scalar, angle: Angle) -> Self {
+        let (sin,cos) = angle.sin_cos();
+
+        Self {
+            re: r*cos,
+            im: r*sin
+        }
+    }
+
+    /// Get this complex number's angle (counter-clockwise).
+    pub fn angle(&self) -> Angle {
+        Angle::radians( self.im.atan2(self.re) )
+    }
+
     /// Conjugate, i.e. negate the imaginary part
     pub fn conj(&self) -> Self { Self { re: self.re, im: -self.im } }
 
