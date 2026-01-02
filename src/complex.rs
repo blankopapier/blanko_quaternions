@@ -197,6 +197,24 @@ impl Complex
         ( z * self.log() ).exp()
     }
 
+    /// Linearily interpolate between this and `other`
+    pub fn lerp(&self, other: Complex, alpha: Scalar) -> Complex
+    {
+        (1.0 - alpha) * self + alpha * other
+    }
+
+    /// Spherically interpolate between this and `other`
+    pub fn slerp(&self, other: Complex, alpha: Scalar) -> Complex
+    {
+        let (r1,r2) = (self.norm(), other.norm());
+        let (a1,a2) = (self.angle(), other.angle());
+
+        Complex::polar(
+            (1.0 - alpha) * r1 + alpha * r2,
+            (1.0 - alpha) * a1 + alpha * a2
+        )
+    }
+
 }
 
 auto_ops::impl_op_ex!(* |lhs: &Complex, rhs: &Complex| -> Complex {

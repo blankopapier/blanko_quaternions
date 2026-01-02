@@ -66,6 +66,13 @@ impl Quaternion
     pub fn norm(&self) -> Scalar { (self.w*self.w + self.i*self.i + self.j*self.j + self.k*self.k).sqrt() }
     pub fn normalized(&self) -> Self { *self * (1.0 / self.norm()) }
 
+    /// Get this Quaternion's angle, i.e. if q=r(cos(x)+sin(x)*v), where r is the norm and v is a normalized axis, get x
+    pub fn angle(&self) -> Angle
+    {
+        let n = self.normalized();
+        Angle::radians(n.w.acos())
+    }
+
     /// Create a Quaternion representing a point in space, i.e. xi + yj + zk.
     pub fn point(pos: &[Scalar]) -> Self
     {
@@ -105,6 +112,57 @@ impl Quaternion
         let a = v.cross(&direction);
 
         (direction + 2.0 * (vw*a + v.cross(&a))).into()
+    }
+
+    /// Linearily interpolate between this and `other`
+    pub fn lerp(&self, other: Quaternion, alpha: Scalar) -> Quaternion
+    {
+        (1.0 - alpha) * self + alpha * other
+    }
+
+    /// Spherically interpolate between `self` and `other`
+    pub fn slerp(&self, other: Quaternion, alpha: Scalar) -> Quaternion
+    {
+        // https://en.wikipedia.org/wiki/Slerp
+        // Extended to interpolate length as well
+
+        let (r1,r2) = (self.norm(), other.norm());
+        let (q1,q2) = (self.normalized(), other.normalized());
+
+        let q = ( q2*q1.conj() ).powf(alpha) * q1;
+
+        ( (1.0 - alpha) * r1 + alpha * r2 ) * q
+    }
+
+    /// Raise this Quaternion to a (real) power
+    pub fn powf(&self, f: Scalar) -> Quaternion
+    {
+        let r = self.norm();
+
+        // Check if this Quaternion is just a scalar
+        if (self.w - r).powi(2) <= Scalar::EPSILON
+        {
+            Quaternion { w: r.powf(f), i: 0.0, j: 0.0, k: 0.0 }
+        }
+        else
+        {
+            let n    = self * (1.0/r);
+            let axis = Vector3 { x: n.i, y: n.j, z: n.k }.normalize();
+
+            let angle     = n.w.acos() * f;
+            let (sin,cos) = angle.sin_cos();
+
+            let r = r.powf(f);
+
+            Quaternion {
+                w: r * cos,
+                i: r * sin * axis.x,
+                j: r * sin * axis.y,
+                k: r * sin * axis.z,
+            }
+
+        }
+
     }
 
     // TODO: Pow, Log, Exp

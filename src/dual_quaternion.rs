@@ -1,3 +1,5 @@
+//! Dual quaternions can be used for rigid body movement. They can also be used to represent points and lines.
+
 pub use crate::quaternion::Quaternion;
 pub use crate::angle::Angle;
 
@@ -320,6 +322,39 @@ impl DualQuaternion
             ie: lm.x, je: lm.y, ke: lm.z,
             we: 0.0
         }
+    }
+
+    /// Linearily interpolate between `self` and `other`
+    pub fn lerp(&self, other: &DualQuaternion, alpha: Scalar) -> DualQuaternion
+    {
+        (1.0 - alpha) * self + alpha * other
+    }
+
+    /// Screw-Spherical Lerp.
+    /// This slerps the rotational (real) part and lerps the translational (dual) part.
+    /// Also lerps the norm of the DualQuaternions.
+    pub fn sclerp(&self, other: &DualQuaternion, alpha: Scalar) -> DualQuaternion
+    {
+        // This can probably be more optimized
+
+        let (r1,r2)   = (self.norm(), other.norm());
+        let (dq1,dq2) = (self * (1.0/r1), other * (1.0/r2));
+
+        let (rot1,rot2) = (
+            Quaternion { w: dq1.w, i: dq1.i, j: dq1.j, k: dq1.k },
+            Quaternion { w: dq2.w, i: dq2.i, j: dq2.j, k: dq2.k },
+        );
+
+        // "Remove" the rotation from the DualQuaternions
+        let (t1,t2) = (
+            dq1 * DualQuaternion { w: rot1.w, i: -rot1.i, j: -rot1.j, k: -rot1.k, ie: 0.0, je: 0.0, ke: 0.0, we: 0.0 },
+            dq2 * DualQuaternion { w: rot2.w, i: -rot2.i, j: -rot2.j, k: -rot2.k, ie: 0.0, je: 0.0, ke: 0.0, we: 0.0 },
+        );
+
+        let r   = (1.0 - alpha) * r1 + alpha * r2;
+        let rot = rot1.slerp(rot2, alpha);
+
+        r * t1.lerp(&t2, alpha) * DualQuaternion { w: rot.w, i: rot.i, j: rot.j, k: rot.k, ie: 0.0, je: 0.0, ke: 0.0, we: 0.0 }
     }
 
     // TODO: Pow, Log, Exp

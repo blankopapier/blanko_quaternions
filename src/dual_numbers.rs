@@ -176,6 +176,11 @@ impl DualNumber
 
         if i < 0 { 1.0 / d } else { d }
     }
+
+    pub fn lerp(&self, other: DualNumber, alpha: Scalar) -> DualNumber
+    {
+        (1.0 - alpha) * self + alpha * other
+    }
 }
 
 

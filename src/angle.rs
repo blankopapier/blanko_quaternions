@@ -202,4 +202,10 @@ impl Angle
     pub fn tan(&self) -> Scalar { self.rad.tan() }
 
     pub fn sin_cos(&self) -> (Scalar,Scalar) { self.rad.sin_cos() }
+
+    /// Linearily interpolate between `self` and `other`
+    pub fn lerp(&self, other: Angle, alpha: Scalar) -> Angle
+    {
+        (1.0 - alpha) * self + alpha * other
+    }
 }
