@@ -90,17 +90,17 @@ impl DualQuaternion
         }
     }
 
-    /// Negate the dual part.
+    /// Negate the dual part. (= "ideal" or "dual" conjugation)
     pub fn iconj(&self) -> Self
     {
         Self {
             w:   self.w,
-            i:  -self.i,
-            j:  -self.j,
-            k:  -self.k,
-            ie:  self.ie,
-            je:  self.je,
-            ke:  self.ke,
+            i:   self.i,
+            j:   self.j,
+            k:   self.k,
+            ie: -self.ie,
+            je: -self.je,
+            ke: -self.ke,
             we: -self.we,
         }
     }
@@ -115,7 +115,7 @@ impl DualQuaternion
         self.k * self.k).sqrt()
     }
 
-    /// The norm of the dual-part-Quaternion.
+    /// The "ideal" or "dual" norm. (= norm of the dual-part-Quaternion)
     /// For normalized lines, this will the distance from the origin.
     pub fn inorm(&self) -> Scalar
     {
