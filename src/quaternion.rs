@@ -90,29 +90,55 @@ impl Quaternion
         q
     }
 
-    pub fn transform_point(&self, point: &[Scalar]) -> [Scalar;3]
-    {
-        self.transform_direction(point).into()
-    }
-
-    pub fn transform_direction(&self, direction: &[Scalar]) -> [Scalar;3]
+    /// Rotate a vector.
+    /// <div class="warning">
+    /// If you want to use unnormalized quaternions for scaled rotation, consider `Quaternion::transform_vector_scaled()`
+    /// </div>
+    pub fn transform_vector(&self, vector: &[Scalar]) -> [Scalar;3]
     {
         // Taken from
         // https://rigidgeometricalgebra.org/wiki/index.php?title=Motor
 
-        let direction = Vector3 {
-            x: direction[0],
-            y: direction[1],
-            z: direction[2]
+        let vector = Vector3 {
+            x: vector[0],
+            y: vector[1],
+            z: vector[2]
         };
 
         let v = Vector3 { x: self.i,  y: self.j,  z: self.k  };
         let vw = self.w;
 
-        let a = v.cross(&direction);
+        let a = v.cross(&vector);
 
-        (direction + 2.0 * (vw*a + v.cross(&a))).into()
+        (vector + 2.0 * (vw*a + v.cross(&a))).into()
     }
+
+    /// Rotate and scale a vector.
+    pub fn transform_vector_scaled(&self, vector: &[Scalar]) -> [Scalar;3]
+    {
+        // Taken from
+        // https://rigidgeometricalgebra.org/wiki/index.php?title=Motor
+
+        let vector = Vector3 {
+            x: vector[0],
+            y: vector[1],
+            z: vector[2]
+        };
+
+        let v = Vector3 { x: self.i,  y: self.j,  z: self.k  };
+        let vw = self.w;
+
+        let a = v.cross(&vector);
+
+        // Extended the above by scaling factor.
+        // You can see this yourself if you multiply Qv~Q out to get the formula above
+        // and observing there is a scaling factor needed for scaled rotation
+
+        let s = self.norm();
+
+        (s*vector + 2.0 * (vw*a + v.cross(&a))).into()
+    }
+
 
     /// Linearily interpolate between this and `other`
     pub fn lerp(&self, other: Quaternion, alpha: Scalar) -> Quaternion
