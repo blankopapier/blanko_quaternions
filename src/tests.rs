@@ -2,10 +2,19 @@
 
 fn main()
 {
-    test_dual_quat_exp_brute_force();
+    test_slerp_quat();
 }
 
 
+fn test_slerp_quat()
+{
+    use blanko_quaternions::quaternion::*;
+
+    let q1 = Quaternion::scaled_rotor(Angle::degrees(90.0), &[1.0, 0.0, 0.0], 0.5);
+    let q2 = Quaternion::scaled_rotor(Angle::degrees(90.0), &[0.0, 0.0, 1.0], 2.0);
+
+    println!("{:?}", (q1.slerp(q2, 1.0)).transform_vector_scaled(&[1.0,0.0,0.0]));
+}
 
 
 /// Check what the power series of exp() returns for dual quats

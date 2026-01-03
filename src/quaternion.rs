@@ -92,9 +92,9 @@ impl Quaternion
     }
 
     /// Create a rotor, i.e. a normalized quaternion used for rotating
-    pub fn rotor(angle: Angle, x: Scalar, y: Scalar, z: Scalar) -> Self
+    pub fn rotor(angle: Angle, axis: &[Scalar]) -> Self
     {
-        let mut q = Self { w: 0.0, i: x, j: y, k: z }.normalized();
+        let mut q = Self { w: 0.0, i: axis[0], j: axis[1], k: axis[2] }.normalized();
         let (sin,cos) = (angle*0.5).sin_cos();
 
         q *= sin;
@@ -104,9 +104,9 @@ impl Quaternion
     }
 
     /// Create a scaled rotor, i.e. an unnormalized quaternion used for scaled rotating
-    pub fn scaled_rotor(angle: Angle, x: Scalar, y: Scalar, z: Scalar, scale: Scalar) -> Self
+    pub fn scaled_rotor(angle: Angle, axis: &[Scalar], scale: Scalar) -> Self
     {
-        let mut q = Self { w: 0.0, i: x, j: y, k: z }.normalized();
+        let mut q = Self { w: 0.0, i: axis[0], j: axis[1], k: axis[2] }.normalized();
         let (sin,cos) = (angle*0.5).sin_cos();
 
         q *= sin;
@@ -178,14 +178,15 @@ impl Quaternion
     pub fn slerp(&self, other: Quaternion, alpha: Scalar) -> Quaternion
     {
         // https://en.wikipedia.org/wiki/Slerp
-        // Extended to interpolate length as well
+        //
+        // Extended to lerp scaling as well as well
 
         let (r1,r2) = (self.norm(), other.norm());
-        let (q1,q2) = (self.normalized(), other.normalized());
+        let (q1,q2) = (self * (1.0/r1), other * (1.0/r2));
 
         let q = ( q2*q1.conj() ).powf(alpha) * q1;
 
-        ( (1.0 - alpha) * r1 + alpha * r2 ) * q
+        ((1.0 - alpha) * r1 + alpha * r2) * q
     }
 
     /// Raise this Quaternion to a (real) power
