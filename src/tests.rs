@@ -2,20 +2,10 @@
 
 fn main()
 {
-    use blanko_quaternions::dual_quaternion::*;
+    use blanko_quaternions::quaternion::*;
 
-    let dq = DualQuaternion::screw(
-        &DualQuaternion::line(&[0.0,1.0,0.0], &[1.0,0.0,0.0]),
-        Angle::degrees(90.0),
-        1.0
-    );
+    let qs = Quaternion::scaled_rotor(Angle::degrees(45.0), 0.0, 1.0, 1.0, 2.0);
+    let qn = Quaternion::rotor(Angle::degrees(45.0), 0.0, 1.0, 1.0);
 
-    let r1 = DualQuaternion::rotor(Angle::degrees(45.0), &[0.0,0.0,1.0]);
-    let t1 = DualQuaternion::translator(&[0.0,1.0,0.0]);
-
-
-    let p = (r1*dq).transform_point(&[0.0,0.0,0.0]);
-    let l = DualQuaternion::line(&[0.0,0.0,0.0], &[1.0,0.0,0.0]);
-
-    println!("{:?}", dq * l * dq.conj() );
+    println!("{:?}",  qs.transform_vector_scaled(&[1.0,0.0,0.0]) );
 }

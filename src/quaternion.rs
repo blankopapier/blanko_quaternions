@@ -79,6 +79,7 @@ impl Quaternion
         Quaternion { w: 0.0, i: pos[0], j: pos[1], k: pos[2] }
     }
 
+    /// Create a rotor, i.e. a normalized quaternion used for rotating
     pub fn rotor(angle: Angle, x: Scalar, y: Scalar, z: Scalar) -> Self
     {
         let mut q = Self { w: 0.0, i: x, j: y, k: z }.normalized();
@@ -88,6 +89,18 @@ impl Quaternion
         q.w = cos;
 
         q
+    }
+
+    /// Create a scaled rotor, i.e. an unnormalized quaternion used for scaled rotating
+    pub fn scaled_rotor(angle: Angle, x: Scalar, y: Scalar, z: Scalar, scale: f32) -> Self
+    {
+        let mut q = Self { w: 0.0, i: x, j: y, k: z }.normalized();
+        let (sin,cos) = (angle*0.5).sin_cos();
+
+        q *= sin;
+        q.w = cos;
+
+        scale.sqrt() * q
     }
 
     /// Rotate a vector.
@@ -132,9 +145,12 @@ impl Quaternion
 
         // Extended the above by scaling factor.
         // You can see this yourself if you multiply Qv~Q out to get the formula above
-        // and observing there is a scaling factor needed for scaled rotation
+        // and observing there is a scaling factor needed for scaled rotation.
+        //
+        // We need to square it because if Q is scaled rotor with scaling factor s, then
+        // Qv~Q = sQ' v s~Q' = s² (Q' v ~Q')
 
-        let s = self.norm();
+        let s = self.norm().powi(2);
 
         (s*vector + 2.0 * (vw*a + v.cross(&a))).into()
     }
