@@ -207,6 +207,12 @@ impl Quaternion
         let radius = w.exp();
         let angle  = (i*i + j*j + k*k).sqrt();
 
+        // exp(0.0) = 1
+        // Without this check, it won't work
+        if angle*angle < Scalar::EPSILON {
+            return Quaternion::ONE
+        }
+
         let (sin,cos) = angle.sin_cos();
 
         Quaternion {

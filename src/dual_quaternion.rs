@@ -192,37 +192,37 @@ impl DualQuaternion
     /// The screw will rotate `angle` and travel `distance` units along the line.
     pub fn screw(line: &DualQuaternion, angle: Angle, distance: Scalar) -> Self
     {
-        // So basically, we use Geometric Algebra for this and just call it DualQuaternion afterward.
-        // The key idea is to convert position and vector3 to moment and vector3, aka Plücker Coordinates for a line.
-        // We then 'normalize' this line and create a rotor and translator from it.
-        // Then compose the two DualQuaternions and return it.
+        // So you probably heard of exp(ix) for some real x being some kind of rotational thing.
+        // If you multiply some complex number by exp(ix) then it gets rotated.
+        //
+        // Just imagine we're going 3D now, out of the complex plane.
+        // Assume i is just some line through the origin with direction (0,1,0), i.e. directly "into" the complex plane.
+        //
+        // We can do this rotational thing with all lines, not just through the origin.
+        // So if you do exp(ix + Em), for some direction x and moment m, we can create our general rotor and
+        // we can even move along the line, so some kind of screwing motion!
+        // For screwing we just need to do: exp(ix + Em + Ex).
+        //
+        // Basically.
+        //
+        // This algorithm below shows you how to do it exactly.
 
-        let (sin,cos) = (angle*0.5).sin_cos();
-        let t = distance * 0.5;
+        let line = line.normalized();
+        let angle = 0.5 * angle.rad();
+        let distance = 0.5 * distance;
 
-        let rotor = DualQuaternion {
-            w:  cos,
-            i:  sin * line.i,
-            j:  sin * line.j,
-            k:  sin * line.k,
-            ie: sin * line.ie,
-            je: sin * line.je,
-            ke: sin * line.ke,
-            we: 0.0
+        let dq = DualQuaternion {
+            w:  0.0,
+            i:  line.i  * angle,
+            j:  line.j  * angle,
+            k:  line.k  * angle,
+            ie: line.ie * angle + distance * line.i,
+            je: line.je * angle + distance * line.j,
+            ke: line.ke * angle + distance * line.k,
+            we: 0.0,
         };
 
-        let translator = DualQuaternion {
-            w:  1.0,
-            i:  0.0,
-            j:  0.0,
-            k:  0.0,
-            ie: t * line.i,
-            je: t * line.j,
-            ke: t * line.k,
-            we: 0.0
-        };
-
-        translator * rotor
+        return dq.exp();
     }
 
     /// Basically a Quaternion
@@ -349,7 +349,8 @@ impl DualQuaternion
         (1.0 - alpha) * self + alpha * other
     }
 
-    /// Exponential of a pure dual quaternion. Will produce wrong results for non-pure dual quaternions.
+    /// Exponential of a pure dual quaternion.
+    /// Will produce wrong results for non-pure dual quaternions.
     /// <div class="warning"> A pure dual quaternion's .we and .w fields are 0.0 <div>
     pub fn exp(&self) -> DualQuaternion
     {
@@ -365,6 +366,13 @@ impl DualQuaternion
         let DualQuaternion { w: _, i, j, k, ie, je, ke, we: _ } = *self;
 
         let r = (i*i + j*j + k*k).sqrt();
+
+        // exp(0.0) = 1
+        // Without this check, it won't work
+        if r*r < Scalar::EPSILON {
+            return DualQuaternion::ONE
+        }
+
         let t = i*ie + j*je + k*ke;
 
         let (sin,cos) = r.sin_cos();
@@ -383,7 +391,8 @@ impl DualQuaternion
         }
     }
 
-    /// Exponential of a dual quaternion. Will produce wrong result when used on unnormalized dual quaternions.
+    /// Logarithm of a dual quaternion.
+    /// Will produce wrong result when used on unnormalized dual quaternions.
     pub fn log(&self) -> DualQuaternion
     {
         // I took the liberty of taking this algorithm from here, more or less
@@ -391,8 +400,7 @@ impl DualQuaternion
         //
         // I needed to adjust some minor things though
 
-        let norm = self.norm();
-        let DualQuaternion { w, i, j, k, ie, je, ke, we } = self * (1.0/norm);
+        let DualQuaternion { w, i, j, k, ie, je, ke, we } = *self;
 
         let r = (i*i + j*j + k*k).sqrt();
         let t = i*ie + j*je + k*ke;
@@ -412,6 +420,23 @@ impl DualQuaternion
             ke: a * ke + tr * k,
             we: 0.0
         }
+    }
+
+    /// Raise this dual quaternion to some power.
+    /// Will produce incorrect result for unnormalized dual quaternions.
+    pub fn powf(&self, f: Scalar) -> DualQuaternion
+    {
+        ( f * self.log() ).exp()
+    }
+
+    /// Screw-lerp this dual quaternion between another dual quaternion.
+    /// Only works on normalized dual quaternions.
+    pub fn sclerp(&self, other: &DualQuaternion, alpha: Scalar) -> DualQuaternion
+    {
+        // Took the formula (14) from
+        // https://arxiv.org/pdf/2303.13395
+
+        self * (self.conj() * other).powf(alpha)
     }
 
     // TODO: Pow, Log, Exp, Sclerp
