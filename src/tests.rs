@@ -6,6 +6,8 @@ fn main()
 }
 
 
+
+
 /// Check what the power series of exp() returns for dual quats
 fn test_dual_quat_exp_brute_force()
 {

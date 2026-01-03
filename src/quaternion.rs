@@ -62,6 +62,18 @@ impl std::fmt::Display for Quaternion
 
 impl Quaternion
 {
+    pub const ZERO:   Self = Self { w: 0.0, i: 0.0, j: 0.0, k: 0.0 };
+    pub const ONE:    Self = Self { w: 1.0, ..Self::ZERO };
+
+    pub const X_AXIS: Self = Self { i: 1.0, ..Self::ZERO };
+    pub const Y_AXIS: Self = Self { j: 1.0, ..Self::ZERO };
+    pub const Z_AXIS: Self = Self { k: 1.0, ..Self::ZERO };
+
+    pub fn new(w: Scalar, i: Scalar, j: Scalar, k: Scalar) -> Self
+    {
+        Quaternion { w, i, j, k }
+    }
+
     pub fn conj(&self) -> Self { Self { w: self.w, i: -self.i, j: -self.j, k: -self.k } }
     pub fn norm(&self) -> Scalar { (self.w*self.w + self.i*self.i + self.j*self.j + self.k*self.k).sqrt() }
     pub fn normalized(&self) -> Self { *self * (1.0 / self.norm()) }
@@ -92,7 +104,7 @@ impl Quaternion
     }
 
     /// Create a scaled rotor, i.e. an unnormalized quaternion used for scaled rotating
-    pub fn scaled_rotor(angle: Angle, x: Scalar, y: Scalar, z: Scalar, scale: f32) -> Self
+    pub fn scaled_rotor(angle: Angle, x: Scalar, y: Scalar, z: Scalar, scale: Scalar) -> Self
     {
         let mut q = Self { w: 0.0, i: x, j: y, k: z }.normalized();
         let (sin,cos) = (angle*0.5).sin_cos();

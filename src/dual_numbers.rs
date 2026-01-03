@@ -47,6 +47,15 @@ impl std::fmt::Display for DualNumber
 
 impl DualNumber
 {
+    pub const ZERO: DualNumber = DualNumber { re: 0.0, du: 0.0 };
+    pub const ONE:  DualNumber = DualNumber { re: 1.0, du: 0.0 };
+    pub const DUAL: DualNumber = DualNumber { re: 0.0, du: 1.0 };
+
+    pub fn new(re: Scalar, du: Scalar) -> Self
+    {
+        DualNumber { re, du }
+    }
+
     /// Conjugate, i.e. negate the dual part
     pub fn conj(&self) -> Self { Self { re: self.re, du: -self.du } }
 

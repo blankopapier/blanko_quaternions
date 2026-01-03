@@ -45,6 +45,10 @@ impl std::fmt::Display for Complex
 
 impl Complex
 {
+    pub const ZERO: Complex = Complex { re: 0.0, im: 0.0 };
+    pub const ONE:  Complex = Complex { re: 1.0, im: 0.0 };
+    pub const IMAG: Complex = Complex { re: 0.0, im: 1.0 };
+
     pub fn new(re: Scalar, im: Scalar) -> Self { Self { re, im } }
 
     /// Create new complex number from polar coordinates.

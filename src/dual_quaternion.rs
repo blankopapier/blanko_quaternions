@@ -58,6 +58,25 @@ impl std::fmt::Display for DualQuaternion
 
 impl DualQuaternion
 {
+    pub const ZERO:  Self = Self { w: 0.0, i: 0.0, j: 0.0, k: 0.0, ie: 0.0, je: 0.0, ke: 0.0, we: 0.0 };
+    pub const ONE:   Self = Self { w:  1.0, ..Self::ZERO };
+    pub const DUAL:  Self = Self { we: 1.0, ..Self::ZERO };
+
+    pub const REAL_X: Self = Self { i:  1.0, ..Self::ZERO };
+    pub const REAL_Y: Self = Self { j:  1.0, ..Self::ZERO };
+    pub const REAL_Z: Self = Self { k:  1.0, ..Self::ZERO };
+
+    pub const DUAL_X: Self = Self { ie:  1.0, ..Self::ZERO };
+    pub const DUAL_Y: Self = Self { je:  1.0, ..Self::ZERO };
+    pub const DUAL_Z: Self = Self { ke:  1.0, ..Self::ZERO };
+
+
+    pub fn new(w: Scalar, i: Scalar, j: Scalar, k: Scalar,
+               ie: Scalar, je: Scalar, ke: Scalar, we: Scalar) -> Self
+    {
+        DualQuaternion { w, i, j, k, ie, je, ke, we }
+    }
+
     /// Negate everything except scalar and dual-scalar (clifford conjugation).
     /// Use this when transforming lines in sandwich products
     pub fn conj(&self) -> Self
