@@ -5,7 +5,7 @@ It started out as a library for quaternions only but then I wanted to have simil
 
 ## Roadmap
 
-- [ ] Mathematical methods for all types (exp,log,powi,powf,lerp,slerp,sclerp)
+- [X] Mathematical methods for all types (exp,log,powi,powf,lerp,slerp,sclerp)
 - [ ] Find a good way to operate between types (especially multiplication between types)
 - [ ] Ease of use (need feedback for that)
 - [ ] Better documentation

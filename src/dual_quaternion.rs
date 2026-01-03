@@ -438,8 +438,6 @@ impl DualQuaternion
 
         self * (self.conj() * other).powf(alpha)
     }
-
-    // TODO: Pow, Log, Exp, Sclerp
 }
 
 auto_ops::impl_op_ex!(* |lhs: &DualQuaternion, rhs: &DualQuaternion| -> DualQuaternion {
