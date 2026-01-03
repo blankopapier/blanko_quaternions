@@ -137,52 +137,28 @@ impl Quaternion
     /// Raise this Quaternion to a (real) power
     pub fn powf(&self, f: Scalar) -> Quaternion
     {
-        let r = self.norm();
-
-        // Check if this Quaternion is just a scalar
-        if (self.w - r).powi(2) <= Scalar::EPSILON
-        {
-            Quaternion { w: r.powf(f), i: 0.0, j: 0.0, k: 0.0 }
-        }
-        else
-        {
-            let n    = self * (1.0/r);
-            let axis = Vector3 { x: n.i, y: n.j, z: n.k }.normalize();
-
-            let angle     = n.w.acos() * f;
-            let (sin,cos) = angle.sin_cos();
-
-            let r = r.powf(f);
-
-            Quaternion {
-                w: r * cos,
-                i: r * sin * axis.x,
-                j: r * sin * axis.y,
-                k: r * sin * axis.z,
-            }
-
-        }
-
+        (f * self.log()).exp()
     }
 
     /// Exponential of a quaternion
     pub fn exp(&self) -> Quaternion
     {
         // https://en.wikipedia.org/wiki/Quaternion#Functions_of_a_quaternion_variable
+        //
+        // This is basically like Euler's Identity but with the quaternion's axis being imaginary unit i
 
         let Quaternion { w, i, j, k } = *self;
 
-        let exp_w = w.exp();
-        let axis_norm = (i*i + j*j + k*k).sqrt();
+        let radius = w.exp();
+        let angle  = (i*i + j*j + k*k).sqrt();
 
-        let (sin,cos) = axis_norm.sin_cos();
-        let (sin,cos) = (exp_w * sin / axis_norm, exp_w * cos);
+        let (sin,cos) = angle.sin_cos();
 
         Quaternion {
-            w: cos,
-            i: sin * i,
-            j: sin * j,
-            k: sin * k,
+            w: radius * cos,
+            i: radius * sin * i / angle,
+            j: radius * sin * j / angle,
+            k: radius * sin * k / angle,
         }
 
     }
@@ -194,17 +170,16 @@ impl Quaternion
 
         let Quaternion { w, i, j, k } = *self;
 
-        let axis_norm = (i*i + j*j + k*k).sqrt();
-        let quat_norm = i*i + j*j + k*k + w*w;
+        let norm = self.norm();
 
-        let log  = quat_norm.ln();
-        let acos = (w / quat_norm).acos() / axis_norm;
+        let axis_norm = (i*i + j*j + k*k).sqrt();
+        let acos = (w / axis_norm).acos();
 
         Quaternion {
-            w: log,
-            i: acos * i,
-            j: acos * j,
-            k: acos * k,
+            w: norm.ln(),
+            i: acos * i / axis_norm,
+            j: acos * j / axis_norm,
+            k: acos * k / axis_norm,
         }
 
     }
