@@ -349,6 +349,71 @@ impl DualQuaternion
         (1.0 - alpha) * self + alpha * other
     }
 
+    /// Exponential of a pure dual quaternion. Will produce wrong results for non-pure dual quaternions.
+    /// <div class="warning"> A pure dual quaternion's .we and .w fields are 0.0 <div>
+    pub fn exp(&self) -> DualQuaternion
+    {
+        // You can derive that stuff yourselve if you really want to...
+        // It's basically clever grouping and recognizing of terms followed by
+        // some power series stuff.
+        //
+        // You can have a look at this:
+        // https://jamessjackson.com/lie_algebra_tutorial/06-closed_form_mat_exp/
+        //
+        // His $\gamma$ term is my `t` term
+
+        let DualQuaternion { w: _, i, j, k, ie, je, ke, we: _ } = *self;
+
+        let r = (i*i + j*j + k*k).sqrt();
+        let t = i*ie + j*je + k*ke;
+
+        let (sin,cos) = r.sin_cos();
+
+        let tr = (cos/(r*r) - sin/(r*r*r))*t;
+
+        DualQuaternion {
+            w:   cos,
+            i:   (sin/r) * i,
+            j:   (sin/r) * j,
+            k:   (sin/r) * k,
+            ie:  (sin/r) * ie + tr * i,
+            je:  (sin/r) * je + tr * j,
+            ke:  (sin/r) * ke + tr * k,
+            we: -(sin/r) * t
+        }
+    }
+
+    /// Exponential of a dual quaternion. Will produce wrong result when used on unnormalized dual quaternions.
+    pub fn log(&self) -> DualQuaternion
+    {
+        // I took the liberty of taking this algorithm from here, more or less
+        // https://jamessjackson.com/lie_algebra_tutorial/06-closed_form_mat_exp/
+        //
+        // I needed to adjust some minor things though
+
+        let norm = self.norm();
+        let DualQuaternion { w, i, j, k, ie, je, ke, we } = self * (1.0/norm);
+
+        let r = (i*i + j*j + k*k).sqrt();
+        let t = i*ie + j*je + k*ke;
+
+        let a = (r/w).atan() / r;
+        let b = t / (r*r);
+
+        let tr = (w - a)*b - we;
+
+        DualQuaternion {
+            w:  0.0,
+            i:  a * i,
+            j:  a * j,
+            k:  a * k,
+            ie: a * ie + tr * i,
+            je: a * je + tr * j,
+            ke: a * ke + tr * k,
+            we: 0.0
+        }
+    }
+
     // TODO: Pow, Log, Exp, Sclerp
 }
 
